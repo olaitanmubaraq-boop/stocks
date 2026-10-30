@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockHub Pro - Stock & Inventory Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col antialiased transition-colors duration-200">
+
+    <!-- ADMIN SECURITY ALERT SIGNAL BANNER -->
+    <div id="adminSecuritySignalBanner" class="hidden bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white px-4 py-2.5 shadow-lg border-b border-red-700 animate-pulse">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-xs font-bold">
+            <div class="flex items-center gap-2">
+                <span class="bg-white text-red-700 px-2 py-0.5 rounded text-[10px] font-black uppercase">Admin Alert</span>
+                <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                <span id="adminSecuritySignalMessage">Security Signal: High sensitivity password reset request detected!</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('logs')" class="underline hover:text-slate-100 font-bold">View Audit Logs &rarr;</button>
+                <button onclick="dismissAdminSignalBanner()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight">StockHub Pro</h1>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium tracking-wide uppercase">Wholesale & Retail Management</p>
+                    </div>
+                </div>
+
+                <!-- Right Actions & Auth Status -->
+                <div class="flex items-center gap-3">
+                    <!-- Admin Signal Bell Badge -->
+                    <button onclick="switchTab('logs')" class="relative p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Security Signal Alerts">
+                        <i class="fa-solid fa-shield-halved text-base"></i>
+                        <span id="adminBadgeDot" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-800"></span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                        <i id="themeIcon" class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <!-- Auth State Container -->
+                    <div id="authContainer">
+                        <button onclick="openAuthModal('login')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION TABS -->
+        <div class="bg-slate-100/70 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 scrollbar-none">
+                    <button onclick="switchTab('overview')" id="tabNav-overview" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-700 shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie"></i> Overview
+                    </button>
+                    <button onclick="switchTab('reports')" id="tabNav-reports" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+                        <i class="fa-solid fa-square-poll-vertical text-amber-500"></i> Reports & Infographics
+                    </button>
+                    <button onclick="switchTab('inventory')" id="tabNav-inventory" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-packing text-emerald-500"></i> Stock Inventory
+                    </button>
+                    <button onclick="switchTab('logs')" id="tabNav-logs" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-purple-500"></i> Activity Logs
+                    </button>
+                    <button onclick="switchTab('settings')" id="tabNav-settings" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+                        <i class="fa-solid fa-gear text-slate-500"></i> Settings
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- TAB 1: EXECUTIVE OVERVIEW -->
+        <section id="tab-overview" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                        <span>Total Stock Value</span>
+                        <i class="fa-solid fa-vault text-brand-500"></i>
+                    </div>
+                    <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white" id="kpiTotalValue">$0.00</div>
+                    <div class="mt-1 text-[11px] text-slate-400">Cost Price Basis</div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                        <span>Wholesale Capacity</span>
+                        <i class="fa-solid fa-building-columns text-purple-500"></i>
+                    </div>
+                    <div class="mt-2 text-2xl font-black text-purple-600 dark:text-purple-400" id="kpiWholesaleVal">$0.00</div>
+                    <div class="mt-1 text-[11px] text-slate-400">Bulk Stock Potential</div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                        <span>Retail Volume Value</span>
+                        <i class="fa-solid fa-store text-emerald-500"></i>
+                    </div>
+                    <div class="mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400" id="kpiRetailVal">$0.00</div>
+                    <div class="mt-1 text-[11px] text-slate-400">Store Front Potential</div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                        <span>Low Stock Items</span>
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                    </div>
+                    <div class="mt-2 text-2xl font-black text-amber-500" id="kpiLowStock">0</div>
+                    <div class="mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium">Reorder threshold alert</div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+                        <span>Active SKUs</span>
+                        <i class="fa-solid fa-barcode text-indigo-500"></i>
+                    </div>
+                    <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white" id="kpiTotalSkus">0</div>
+                    <div class="mt-1 text-[11px] text-slate-400">Catalog Lines</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-pie-chart text-brand-500"></i> Wholesale vs Retail Unit Split
+                    </h3>
+                    <div class="h-60 relative flex items-center justify-center">
+                        <canvas id="overviewSplitChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm lg:col-span-2">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-emerald-500"></i> Capital Allocation by Category
+                    </h3>
+                    <div class="h-60 relative">
+                        <canvas id="overviewCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alert Table -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-amber-500"></i> Reorder Attention List
+                    </h3>
+                    <button onclick="switchTab('inventory')" class="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline">Manage All Stock &rarr;</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-semibold uppercase">
+                                <th class="p-3">SKU</th>
+                                <th class="p-3">Product Name</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3 text-center">Wholesale Stock</th>
+                                <th class="p-3 text-center">Retail Stock</th>
+                                <th class="p-3 text-center">Reorder Level</th>
+                                <th class="p-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lowStockTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: WEEKLY & MONTHLY INFOGRAPHICS REPORTS -->
+        <section id="tab-reports" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Period:</span>
+                    <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-700 w-full sm:w-auto">
+                        <button id="btnPeriodWeekly" onclick="switchReportPeriod('weekly')" class="flex-1 sm:flex-initial px-4 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm transition">
+                            <i class="fa-solid fa-calendar-week mr-1"></i> Weekly Report
+                        </button>
+                        <button id="btnPeriodMonthly" onclick="switchReportPeriod('monthly')" class="flex-1 sm:flex-initial px-4 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 transition">
+                            <i class="fa-solid fa-calendar-days mr-1"></i> Monthly Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                    <select id="reportChannelToggle" onchange="renderInfographicsView()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border-none rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                        <option value="ALL">🌐 Combined Wholesale & Retail</option>
+                        <option value="Wholesale">🏭 Wholesale Channel</option>
+                        <option value="Retail">🏪 Retail Store</option>
+                    </select>
+
+                    <button onclick="openRecordSaleModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition shadow-sm">
+                        <i class="fa-solid fa-cash-register"></i> Quick Sale
+                    </button>
+                    <button onclick="exportReportSummary()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition shadow-sm">
+                        <i class="fa-solid fa-file-export"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Infographic Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-6 shadow-md border border-slate-700 flex flex-col md:flex-row gap-6 items-center justify-between">
+                <div class="space-y-2 max-w-2xl">
+                    <div class="flex items-center gap-2 text-xs font-bold text-brand-400 uppercase tracking-widest">
+                        <i class="fa-solid fa-brain"></i> <span id="reportInsightTitle">Weekly Performance Briefing</span>
+                    </div>
+                    <h3 class="text-xl font-bold" id="reportHeadline">Wholesale Outpaced Retail Channel with Strong Margin Growth</h3>
+                    <p class="text-slate-300 text-xs leading-relaxed" id="reportInsightBody">
+                        Top performing product category was <strong>Pharmaceuticals</strong> generating high gross profit margin.
+                    </p>
+                </div>
+                <div class="flex gap-6 border-t md:border-t-0 md:border-l border-slate-700 pt-4 md:pt-0 md:pl-6 shrink-0 w-full md:w-auto justify-around">
+                    <div class="text-center">
+                        <span class="text-[10px] uppercase text-slate-400 font-semibold block">Gross Profit Margin</span>
+                        <span class="text-2xl font-black text-emerald-400" id="infoGrossMarginPct">0.0%</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="text-[10px] uppercase text-slate-400 font-semibold block">Inventory Turnover</span>
+                        <span class="text-2xl font-black text-purple-400" id="infoTurnoverRatio">4.2x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="text-xs font-bold text-slate-500 uppercase">Gross Revenue</div>
+                    <div class="text-2xl font-black text-slate-900 dark:text-white mt-2" id="infoTotalRevenue">$0.00</div>
+                    <div class="text-[11px] text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-arrow-up"></i> Active trading period</div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="text-xs font-bold text-slate-500 uppercase">Channel Split (WS / RT)</div>
+                    <div class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-2" id="infoRevenueSplit">$0 / $0</div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden flex mt-3">
+                        <div id="barInfoWs" class="bg-purple-600 h-full" style="width: 50%"></div>
+                        <div id="barInfoRt" class="bg-emerald-500 h-full" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="text-xs font-bold text-slate-500 uppercase">Net Gross Profit</div>
+                    <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2" id="infoGrossProfit">$0.00</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Revenue minus Cost of Sales</div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="text-xs font-bold text-slate-500 uppercase">Total Volume Sold</div>
+                    <div class="text-2xl font-black text-slate-900 dark:text-white mt-2" id="infoUnitsSold">0 Units</div>
+                    <div class="text-[11px] text-slate-400 mt-1" id="infoAvgTicket">Avg Order Value: $0.00</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-brand-500"></i> <span id="chartRevenueTrendTitle">Revenue Progression</span>
+                    </h3>
+                    <div class="h-64 relative">
+                        <canvas id="periodRevenueChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-ranking-star text-amber-500"></i> Top SKUs by Revenue Contribution
+                    </h3>
+                    <div class="h-64 relative">
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: STOCK INVENTORY -->
+        <section id="tab-inventory" class="tab-content hidden space-y-4">
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <div class="relative flex-1 sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="inventorySearch" placeholder="Search SKU, name..." oninput="renderInventoryTable()" class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+
+                    <select id="filterCategory" onchange="renderInventoryTable()" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold px-3 py-2">
+                        <option value="ALL">All Categories</option>
+                        <option value="Pharmaceuticals">Pharmaceuticals</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="FMCG Food">FMCG Food</option>
+                        <option value="Hardware">Hardware</option>
+                    </select>
+
+                    <select id="filterStatus" onchange="renderInventoryTable()" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold px-3 py-2">
+                        <option value="ALL">All Statuses</option>
+                        <option value="NORMAL">In Stock</option>
+                        <option value="LOW">Low Stock</option>
+                        <option value="OUT">Out of Stock</option>
+                    </select>
+                </div>
+
+                <button onclick="openProductModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow transition w-full lg:w-auto justify-center">
+                    <i class="fa-solid fa-plus"></i> Add New Product
+                </button>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
+                                <th class="p-3">SKU</th>
+                                <th class="p-3">Product Name</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3 text-center">Unit Cost</th>
+                                <th class="p-3 text-center">Wholesale Price</th>
+                                <th class="p-3 text-center">Retail Price</th>
+                                <th class="p-3 text-center">WS Stock</th>
+                                <th class="p-3 text-center">RT Stock</th>
+                                <th class="p-3 text-center">Reorder Level</th>
+                                <th class="p-3 text-center">Status</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: ACTIVITY AUDIT LOGS -->
+        <section id="tab-logs" class="tab-content hidden space-y-4">
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-purple-500"></i> Audit Activity Logs & Admin Signals
+                    </h3>
+                    <p class="text-xs text-slate-500">Real-time recording of security events, sales, and inventory changes.</p>
+                </div>
+                <button onclick="clearActivityLogs()" class="text-xs text-red-600 dark:text-red-400 font-bold hover:underline">Clear Logs</button>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
+                                <th class="p-3">Timestamp</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">User Email</th>
+                                <th class="p-3">Activity Summary</th>
+                                <th class="p-3 text-center">Security Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: USER SETTINGS -->
+        <section id="tab-settings" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- User Profile Settings -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-user-gear text-brand-500"></i> Account Settings
+                    </h3>
+                    <form onsubmit="handleSaveSettings(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Account Role</label>
+                            <input type="text" readonly id="settingRole" value="Store Inventory Manager" class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold text-slate-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                            <input type="email" readonly id="settingEmail" placeholder="Not logged in" class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold text-slate-500">
+                        </div>
+                        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-2 rounded-lg transition">Update Profile Settings</button>
+                    </form>
+                </div>
+
+                <!-- Admin & Security Settings -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-red-500"></i> Admin Security & Signals
+                    </h3>
+                    <p class="text-xs text-slate-500">Configure alert rules for sensitive account activities.</p>
+
+                    <div class="space-y-3 text-xs">
+                        <label class="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
+                            <span class="font-semibold text-slate-700 dark:text-slate-200">Notify Admin on Password Change Requests</span>
+                            <input type="checkbox" id="settingNotifyPass" checked class="rounded text-brand-600 focus:ring-brand-500">
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
+                            <span class="font-semibold text-slate-700 dark:text-slate-200">Alert on Low Stock Reorder Points</span>
+                            <input type="checkbox" id="settingNotifyLowStock" checked class="rounded text-brand-600 focus:ring-brand-500">
+                        </label>
+                    </div>
+
+                    <button onclick="triggerForgotPasswordFromSettings()" class="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-key"></i> Request Password Change Reset Email
+                    </button>
+                </div>
+
+                <!-- System Config -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-500"></i> Store Parameters
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Currency Code</label>
+                            <input type="text" value="USD ($)" readonly class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold text-slate-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Default Low Stock Threshold</label>
+                            <input type="number" value="25" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: AUTHENTICATION (LOGIN / SIGNUP) -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-user-lock"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-base" id="authModalTitle">Manager Access</h3>
+                </div>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="p-1 bg-slate-100 dark:bg-slate-700 m-5 rounded-lg flex">
+                <button id="authTabLogin" onclick="setAuthMode('login')" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-brand-600 shadow-sm transition">Log In</button>
+                <button id="authTabSignup" onclick="setAuthMode('signup')" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition">Sign Up</button>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="px-5 pb-5 space-y-4">
+                <div id="authNameField" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Full Name</label>
+                    <input type="text" id="authName" placeholder="Manager Name" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="authEmail" required placeholder="manager@stockhub.com" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-medium">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Password</label>
+                        <button type="button" onclick="openForgotPasswordModal()" class="text-[11px] text-brand-600 dark:text-brand-400 hover:underline font-bold">Forgot Password?</button>
+                    </div>
+                    <input type="password" id="authPassword" required placeholder="••••••••" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-medium">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="authSubmitBtn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-3 rounded-lg shadow transition">
+                        Log In to StockHub
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: FORGOT PASSWORD MODAL -->
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-base">Reset Account Password</h3>
+                </div>
+                <button onclick="closeForgotPasswordModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleSendPasswordReset(event)" class="p-5 space-y-4">
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Enter your email address below. We will send a secure password reset link and trigger an <strong class="text-red-500">Admin Security Alert Signal</strong> to log the request.
+                </p>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="resetEmail" required placeholder="manager@stockhub.com" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-medium">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeForgotPasswordModal()" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow">Send Reset Link & Signal Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ADD / EDIT PRODUCT -->
+    <div id="productModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm" id="productModalTitle">Add New Product</h3>
+                <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="productForm" onsubmit="handleProductSubmit(event)" class="p-5 space-y-3">
+                <input type="hidden" id="editProductId">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">SKU Code</label>
+                        <input type="text" id="prodSku" required placeholder="MED-5501" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Category</label>
+                        <select id="prodCategory" required class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-semibold">
+                            <option value="Pharmaceuticals">Pharmaceuticals</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="FMCG Food">FMCG Food</option>
+                            <option value="Hardware">Hardware</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Product Name</label>
+                    <input type="text" id="prodName" required placeholder="Amoxicillin 500mg Capsules" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-medium">
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Unit Cost ($)</label>
+                        <input type="number" step="0.01" id="prodCost" required placeholder="10.00" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Wholesale ($)</label>
+                        <input type="number" step="0.01" id="prodWholesalePrice" required placeholder="14.00" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Retail Price ($)</label>
+                        <input type="number" step="0.01" id="prodRetailPrice" required placeholder="18.00" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Wholesale Stock</label>
+                        <input type="number" id="prodQtyWholesale" required value="100" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Retail Stock</label>
+                        <input type="number" id="prodQtyRetail" required value="30" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Reorder Limit</label>
+                        <input type="number" id="prodReorder" required value="25" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-xs font-bold">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <button type="button" onclick="closeProductModal()" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow">Save SKU Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: RECORD QUICK SALE -->
+    <div id="saleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm"><i class="fa-solid fa-cash-register text-emerald-500 mr-2"></i>Record New Sale</h3>
+                <button onclick="closeRecordSaleModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="saleForm" onsubmit="handleSaleSubmit(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Sales Channel</label>
+                    <select id="saleChannel" onchange="updateSalePriceHint()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-bold">
+                        <option value="Wholesale">Wholesale Channel</option>
+                        <option value="Retail">Retail Store POS</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Select Item SKU</label>
+                    <select id="saleItemSelect" required onchange="updateSalePriceHint()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-100"></select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Quantity</label>
+                        <input type="number" id="saleQty" min="1" required value="1" oninput="calcSaleTotal()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Unit Price ($)</label>
+                        <input type="number" step="0.01" id="saleUnitPrice" required oninput="calcSaleTotal()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-bold">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex justify-between items-center text-xs">
+                    <span class="font-semibold text-slate-600 dark:text-slate-300">Total Transaction Value:</span>
+                    <span class="font-black text-emerald-600 dark:text-emerald-400 text-base" id="saleTotalVal">$0.00</span>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeRecordSaleModal()" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow">Complete Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINERS -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- FIREBASE & MAIN LOGIC SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            sendPasswordResetEmail,
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            collection, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let app, db, auth;
+        let currentUser = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'stockhub-app';
+
+        // Pre-populated Default Inventory Data
+        const defaultInventory = [
+            { id: "P1", sku: "MED-5501", name: "Amoxicillin 500mg (100s)", category: "Pharmaceuticals", costPrice: 12.50, wholesalePrice: 16.00, retailPrice: 22.00, qtyWholesale: 450, qtyRetail: 65, reorderLevel: 50 },
+            { id: "P2", sku: "MED-8812", name: "Surgical Face Masks Box", category: "Pharmaceuticals", costPrice: 2.10, wholesalePrice: 3.50, retailPrice: 6.00, qtyWholesale: 1200, qtyRetail: 18, reorderLevel: 100 },
+            { id: "P3", sku: "FMCG-102", name: "Pure Sunflower Cooking Oil 5L", category: "FMCG Food", costPrice: 8.00, wholesalePrice: 10.20, retailPrice: 14.50, qtyWholesale: 320, qtyRetail: 40, reorderLevel: 60 },
+            { id: "P4", sku: "ELE-9902", name: "USB-C 65W Fast Charger", category: "Electronics", costPrice: 9.20, wholesalePrice: 14.00, retailPrice: 24.99, qtyWholesale: 180, qtyRetail: 12, reorderLevel: 20 },
+            { id: "P5", sku: "HRD-4412", name: "Stainless Steel Fasteners Set", category: "Hardware", costPrice: 0.15, wholesalePrice: 0.25, retailPrice: 0.50, qtyWholesale: 8500, qtyRetail: 300, reorderLevel: 1000 }
+        ];
+
+        window.inventory = [...defaultInventory];
+        window.currentReportPeriod = 'weekly';
+        window.overviewSplitChartInst = null;
+        window.overviewCatChartInst = null;
+        window.periodRevenueChartInst = null;
+        window.topProductsChartInst = null;
+
+        window.activityLogs = [
+            { id: "L1", timestamp: new Date(Date.now() - 3600000).toLocaleString(), type: "LOGIN", email: "manager@stockhub.com", summary: "Successful user login", level: "NORMAL" },
+            { id: "L2", timestamp: new Date(Date.now() - 7200000).toLocaleString(), type: "SALE", email: "pos@stockhub.com", summary: "Sold 25 units of USB-C Fast Charger ($624.75)", level: "NORMAL" }
+        ];
+
+        window.salesHistory = [
+            { id: "S1", date: "2026-10-24", sku: "MED-5501", name: "Amoxicillin 500mg", channel: "Wholesale", qty: 150, price: 16.00, cost: 12.50 },
+            { id: "S2", date: "2026-10-25", sku: "FMCG-102", name: "Sunflower Oil 5L", channel: "Wholesale", qty: 300, price: 10.20, cost: 8.00 },
+            { id: "S3", date: "2026-10-26", sku: "ELE-9902", name: "USB-C Fast Charger", channel: "Retail", qty: 25, price: 24.99, cost: 9.20 }
+        ];
+
+        async function initFirebase() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' 
+                    ? JSON.parse(__firebase_config) 
+                    : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    renderAuthStatusUI();
+                    if (user && !user.isAnonymous) {
+                        document.getElementById('settingEmail').value = user.email || '';
+                    }
+                });
+
+            } catch (err) {
+                console.warn("Firebase initialized in local state:", err);
+                renderAuthStatusUI();
+            }
+        }
+
+        window.initFirebase = initFirebase;
+        window.getAuthInstance = () => auth;
+
+        window.sendResetEmailFirebase = async function(email) {
+            if (auth) {
+                await sendPasswordResetEmail(auth, email);
+            }
+        };
+    </script>
+
+    <script>
+        let authMode = 'login';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.initFirebase) window.initFirebase();
+            renderDashboard();
+            renderInventoryTable();
+            renderActivityLogs();
+        });
+
+        function formatCurr(val) {
+            return '$' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon';
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun';
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `${isError ? 'bg-red-600' : 'bg-slate-900'} text-white text-xs font-semibold px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 transition transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-circle-xmark' : 'fa-circle-check'} text-sm"></i> <span>${msg}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 200);
+            }, 3000);
+        }
+
+        function addActivityLog(type, email, summary, level = "NORMAL") {
+            window.activityLogs.unshift({
+                id: 'L_' + Date.now(),
+                timestamp: new Date().toLocaleString(),
+                type, email, summary, level
+            });
+            renderActivityLogs();
+        }
+
+        function renderActivityLogs() {
+            const tbody = document.getElementById('logsTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            window.activityLogs.forEach(log => {
+                let badge = `<span class="bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 px-2 py-0.5 rounded text-[10px] font-bold">INFO</span>`;
+                if (log.level === 'HIGH' || log.type === 'PASSWORD_RESET') {
+                    badge = `<span class="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 px-2 py-0.5 rounded text-[10px] font-black uppercase">SECURITY SIGNAL</span>`;
+                } else if (log.type === 'SALE') {
+                    badge = `<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">SALE</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                        <td class="p-3 font-mono text-slate-500 text-[11px]">${log.timestamp}</td>
+                        <td class="p-3 font-bold text-slate-800 dark:text-slate-200">${log.type}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 font-medium">${log.email}</td>
+                        <td class="p-3 text-slate-800 dark:text-slate-200">${log.summary}</td>
+                        <td class="p-3 text-center">${badge}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function clearActivityLogs() {
+            window.activityLogs = [];
+            renderActivityLogs();
+            showToast("Activity logs cleared.");
+        }
+
+        function triggerAdminSecuritySignal(email) {
+            const banner = document.getElementById('adminSecuritySignalBanner');
+            const msg = document.getElementById('adminSecuritySignalMessage');
+            const badgeDot = document.getElementById('adminBadgeDot');
+
+            msg.textContent = `ALERT: Password change reset initiated for account (${email})`;
+            banner.classList.remove('hidden');
+            badgeDot.classList.remove('hidden');
+
+            addActivityLog("PASSWORD_RESET", email, "Password reset attempt / trigger initiated", "HIGH");
+        }
+
+        function dismissAdminSignalBanner() {
+            document.getElementById('adminSecuritySignalBanner').classList.add('hidden');
+            document.getElementById('adminBadgeDot').classList.add('hidden');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50 flex items-center gap-2";
+            });
+
+            const activeBtn = document.getElementById(`tabNav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-700 shadow-sm flex items-center gap-2";
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            if (tabId === 'overview') renderDashboard();
+            if (tabId === 'reports') renderInfographicsView();
+            if (tabId === 'inventory') renderInventoryTable();
+            if (tabId === 'logs') renderActivityLogs();
+        }
+
+        // AUTH MODAL
+        function openAuthModal(mode = 'login') {
+            setAuthMode(mode);
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            const title = document.getElementById('authModalTitle');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const nameField = document.getElementById('authNameField');
+            const tabLogin = document.getElementById('authTabLogin');
+            const tabSignup = document.getElementById('authTabSignup');
+
+            if (mode === 'signup') {
+                title.textContent = 'Create Manager Account';
+                submitBtn.textContent = 'Sign Up & Start';
+                nameField.classList.remove('hidden');
+                tabSignup.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-brand-600 shadow-sm transition";
+                tabLogin.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition";
+            } else {
+                title.textContent = 'Sign In to StockHub';
+                submitBtn.textContent = 'Log In to StockHub';
+                nameField.classList.add('hidden');
+                tabLogin.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-brand-600 shadow-sm transition";
+                tabSignup.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition";
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+
+            try {
+                const auth = window.getAuthInstance ? window.getAuthInstance() : null;
+                if (!auth) throw new Error("Auth service unavailable");
+
+                if (authMode === 'signup') {
+                    const { createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    addActivityLog("SIGNUP", email, "New manager account created");
+                    showToast("Account created successfully!");
+                } else {
+                    const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                    await signInWithEmailAndPassword(auth, email, password);
+                    addActivityLog("LOGIN", email, "User logged in");
+                    showToast("Welcome back!");
+                }
+                closeAuthModal();
+            } catch (err) {
+                showToast(err.message || "Authentication error", true);
+            }
+        }
+
+        function openForgotPasswordModal() {
+            closeAuthModal();
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.add('hidden');
+        }
+
+        async function handleSendPasswordReset(e) {
+            e.preventDefault();
+            const email = document.getElementById('resetEmail').value;
+
+            try {
+                if (window.sendResetEmailFirebase) {
+                    await window.sendResetEmailFirebase(email);
+                }
+                triggerAdminSecuritySignal(email);
+                closeForgotPasswordModal();
+                showToast("Password reset link sent! Admin notified.");
+            } catch (err) {
+                triggerAdminSecuritySignal(email);
+                closeForgotPasswordModal();
+                showToast("Password reset triggered! Admin signaled.", false);
+            }
+        }
+
+        function triggerForgotPasswordFromSettings() {
+            const email = document.getElementById('settingEmail').value || 'manager@stockhub.com';
+            document.getElementById('resetEmail').value = email;
+            openForgotPasswordModal();
+        }
+
+        function handleLogout() {
+            try {
+                const auth = window.getAuthInstance ? window.getAuthInstance() : null;
+                if (auth) {
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").then(m => m.signOut(auth));
+                }
+                addActivityLog("LOGOUT", "manager@stockhub.com", "User logged out");
+                showToast("Signed out successfully.");
+            } catch (e) {
+                showToast("Logged out");
+            }
+        }
+
+        function renderAuthStatusUI() {
+            const container = document.getElementById('authContainer');
+            const auth = window.getAuthInstance ? window.getAuthInstance() : null;
+            const user = auth ? auth.currentUser : null;
+
+            if (user && !user.isAnonymous) {
+                const emailStr = user.email || 'Manager';
+                container.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="text-right hidden sm:block">
+                            <div class="text-xs font-bold text-slate-900 dark:text-white">${emailStr}</div>
+                            <div class="text-[10px] text-emerald-600 font-semibold">● Active Manager</div>
+                        </div>
+                        <button onclick="handleLogout()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg transition">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </button>
+                `;
+            }
+        }
+
+        function handleSaveSettings(e) {
+            e.preventDefault();
+            showToast("Settings updated successfully!");
+            addActivityLog("SETTINGS", document.getElementById('settingEmail').value || "system", "Updated store settings parameters");
+        }
+
+        // OVERVIEW DASHBOARD
+        function renderDashboard() {
+            let totalValue = 0, wholesaleCap = 0, retailCap = 0, lowStockCount = 0;
+            const lowStockItems = [];
+
+            window.inventory.forEach(item => {
+                const totalUnits = (item.qtyWholesale || 0) + (item.qtyRetail || 0);
+                totalValue += totalUnits * item.costPrice;
+                wholesaleCap += (item.qtyWholesale || 0) * item.wholesalePrice;
+                retailCap += (item.qtyRetail || 0) * item.retailPrice;
+
+                if (totalUnits <= item.reorderLevel) {
+                    lowStockCount++;
+                    lowStockItems.push(item);
+                }
+            });
+
+            document.getElementById('kpiTotalValue').textContent = formatCurr(totalValue);
+            document.getElementById('kpiWholesaleVal').textContent = formatCurr(wholesaleCap);
+            document.getElementById('kpiRetailVal').textContent = formatCurr(retailCap);
+            document.getElementById('kpiLowStock').textContent = lowStockCount;
+            document.getElementById('kpiTotalSkus').textContent = window.inventory.length;
+
+            const tbody = document.getElementById('lowStockTableBody');
+            tbody.innerHTML = '';
+            if (lowStockItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">All stock levels optimal.</td></tr>`;
+            } else {
+                lowStockItems.forEach(item => {
+                    const totalUnits = item.qtyWholesale + item.qtyRetail;
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                            <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">${item.sku}</td>
+                            <td class="p-3 font-medium">${item.name}</td>
+                            <td class="p-3 text-slate-500">${item.category}</td>
+                            <td class="p-3 text-center font-bold">${item.qtyWholesale}</td>
+                            <td class="p-3 text-center font-bold">${item.qtyRetail}</td>
+                            <td class="p-3 text-center font-semibold text-slate-400">${item.reorderLevel}</td>
+                            <td class="p-3 text-center">
+                                <span class="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">Low Stock (${totalUnits})</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            renderOverviewCharts();
+        }
+
+        function renderOverviewCharts() {
+            let totalWs = 0, totalRt = 0;
+            const categoryMap = {};
+
+            window.inventory.forEach(item => {
+                totalWs += item.qtyWholesale;
+                totalRt += item.qtyRetail;
+                const val = (item.qtyWholesale + item.qtyRetail) * item.costPrice;
+                categoryMap[item.category] = (categoryMap[item.category] || 0) + val;
+            });
+
+            const ctx1 = document.getElementById('overviewSplitChart').getContext('2d');
+            if (window.overviewSplitChartInst) window.overviewSplitChartInst.destroy();
+            window.overviewSplitChartInst = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wholesale Stock Units', 'Retail Stock Units'],
+                    datasets: [{ data: [totalWs, totalRt], backgroundColor: ['#8b5cf6', '#10b981'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            const ctx2 = document.getElementById('overviewCategoryChart').getContext('2d');
+            if (window.overviewCatChartInst) window.overviewCatChartInst.destroy();
+            window.overviewCatChartInst = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(categoryMap),
+                    datasets: [{ label: 'Capital ($)', data: Object.values(categoryMap), backgroundColor: '#0284c7' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // REPORTING INFOGRAPHICS
+        function switchReportPeriod(period) {
+            window.currentReportPeriod = period;
+            const btnW = document.getElementById('btnPeriodWeekly');
+            const btnM = document.getElementById('btnPeriodMonthly');
+
+            if (period === 'weekly') {
+                btnW.className = "flex-1 sm:flex-initial px-4 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm transition";
+                btnM.className = "flex-1 sm:flex-initial px-4 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 transition";
+            } else {
+                btnM.className = "flex-1 sm:flex-initial px-4 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm transition";
+                btnW.className = "flex-1 sm:flex-initial px-4 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 transition";
+            }
+
+            renderInfographicsView();
+        }
+
+        function renderInfographicsView() {
+            const channelFilter = document.getElementById('reportChannelToggle').value;
+            const isWeekly = window.currentReportPeriod === 'weekly';
+
+            const records = window.salesHistory.filter(s => channelFilter === 'ALL' || s.channel === channelFilter);
+
+            let totalRev = 0, totalCost = 0, wsRev = 0, rtRev = 0, totalUnits = 0;
+            const mult = isWeekly ? 1 : 4.2;
+
+            records.forEach(r => {
+                const rev = (r.qty * r.price) * mult;
+                const cost = (r.qty * r.cost) * mult;
+                totalRev += rev;
+                totalCost += cost;
+                totalUnits += Math.round(r.qty * mult);
+
+                if (r.channel === 'Wholesale') wsRev += rev;
+                else rtRev += rev;
+            });
+
+            const grossProfit = totalRev - totalCost;
+            const marginPct = totalRev > 0 ? ((grossProfit / totalRev) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('infoTotalRevenue').textContent = formatCurr(totalRev);
+            document.getElementById('infoRevenueSplit').textContent = `${formatCurr(wsRev)} / ${formatCurr(rtRev)}`;
+            document.getElementById('infoGrossProfit').textContent = formatCurr(grossProfit);
+            document.getElementById('infoUnitsSold').textContent = `${totalUnits.toLocaleString()} Units`;
+            document.getElementById('infoGrossMarginPct').textContent = `${marginPct}%`;
+            document.getElementById('infoAvgTicket').textContent = `Avg Order Value: ${formatCurr(totalRev / (records.length || 1))}`;
+
+            const wsPct = totalRev > 0 ? Math.round((wsRev / totalRev) * 100) : 0;
+            const rtPct = 100 - wsPct;
+            document.getElementById('barInfoWs').style.width = `${wsPct}%`;
+            document.getElementById('barInfoRt').style.width = `${rtPct}%`;
+
+            document.getElementById('reportInsightTitle').textContent = `${isWeekly ? 'Weekly' : 'Monthly'} Performance Briefing`;
+            document.getElementById('reportHeadline').textContent = wsRev >= rtRev 
+                ? `Wholesale Channel generated ${wsPct}% of sales volume (${formatCurr(wsRev)})`
+                : `Retail Channel led total growth with ${rtPct}% of sales (${formatCurr(rtRev)})`;
+
+            document.getElementById('reportInsightBody').innerHTML = `
+                Over this <strong>${isWeekly ? '7-Day' : '30-Day'} period</strong>, gross margin averaged <strong>${marginPct}%</strong> across ${records.length} key sales operations. Total cost of sales was <strong>${formatCurr(totalCost)}</strong>.
+            `;
+
+            renderInfographicsCharts(isWeekly);
+        }
+
+        function renderInfographicsCharts(isWeekly) {
+            const labels = isWeekly ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+            const mult = isWeekly ? 1 : 3.8;
+
+            const ctxRev = document.getElementById('periodRevenueChart').getContext('2d');
+            if (window.periodRevenueChartInst) window.periodRevenueChartInst.destroy();
+
+            document.getElementById('chartRevenueTrendTitle').textContent = isWeekly ? 'Weekly Sales Progression' : 'Monthly Sales Progression';
+
+            window.periodRevenueChartInst = new Chart(ctxRev, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Wholesale Sales', data: isWeekly ? [2400, 3060, 0, 0, 1250, 0, 0] : [14500, 18200, 16900, 21000], backgroundColor: '#8b5cf6' },
+                        { label: 'Retail Sales', data: isWeekly ? [0, 0, 624, 360, 0, 580, 0] : [4200, 5100, 4800, 6200], backgroundColor: '#10b981' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+
+            const ctxTop = document.getElementById('topProductsChart').getContext('2d');
+            if (window.topProductsChartInst) window.topProductsChartInst.destroy();
+
+            window.topProductsChartInst = new Chart(ctxTop, {
+                type: 'bar',
+                indexAxis: 'y',
+                data: {
+                    labels: ['Sunflower Oil 5L', 'Amoxicillin 500mg', 'Fasteners Set', 'Fast Charger 65W', 'Surgical Masks'],
+                    datasets: [{
+                        label: 'Total Revenue ($)',
+                        data: [Math.round(3640 * mult), Math.round(2400 * mult), Math.round(1250 * mult), Math.round(624 * mult), Math.round(360 * mult)],
+                        backgroundColor: '#0284c7'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // INVENTORY CRUD
+        function renderInventoryTable() {
+            const tbody = document.getElementById('inventoryTableBody');
+            const search = document.getElementById('inventorySearch').value.toLowerCase();
+            const catFilter = document.getElementById('filterCategory').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            tbody.innerHTML = '';
+
+            const filtered = window.inventory.filter(item => {
+                const matchesSearch = item.sku.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
+                const matchesCat = catFilter === 'ALL' || item.category === catFilter;
+                
+                const totalUnits = item.qtyWholesale + item.qtyRetail;
+                let status = 'NORMAL';
+                if (totalUnits === 0) status = 'OUT';
+                else if (totalUnits <= item.reorderLevel) status = 'LOW';
+
+                return matchesSearch && matchesCat && (statusFilter === 'ALL' || statusFilter === status);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No inventory products found matching filters.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const totalUnits = item.qtyWholesale + item.qtyRetail;
+                let badge = `<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">In Stock</span>`;
+                if (totalUnits === 0) {
+                    badge = `<span class="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 px-2 py-0.5 rounded text-[10px] font-bold">Out of Stock</span>`;
+                } else if (totalUnits <= item.reorderLevel) {
+                    badge = `<span class="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold">Low Stock</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                        <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">${item.sku}</td>
+                        <td class="p-3 font-semibold">${item.name}</td>
+                        <td class="p-3 text-slate-500">${item.category}</td>
+                        <td class="p-3 text-center font-bold text-slate-700 dark:text-slate-300">${formatCurr(item.costPrice)}</td>
+                        <td class="p-3 text-center font-bold text-purple-600 dark:text-purple-400">${formatCurr(item.wholesalePrice)}</td>
+                        <td class="p-3 text-center font-bold text-emerald-600 dark:text-emerald-400">${formatCurr(item.retailPrice)}</td>
+                        <td class="p-3 text-center font-extrabold">${item.qtyWholesale}</td>
+                        <td class="p-3 text-center font-extrabold">${item.qtyRetail}</td>
+                        <td class="p-3 text-center text-slate-400">${item.reorderLevel}</td>
+                        <td class="p-3 text-center">${badge}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editProduct('${item.id}')" class="p-1 text-brand-600 hover:text-brand-800" title="Edit Item"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteProduct('${item.id}')" class="p-1 text-red-500 hover:text-red-700" title="Delete Item"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openProductModal(editId = null) {
+            document.getElementById('editProductId').value = editId || '';
+            const title = document.getElementById('productModalTitle');
+
+            if (editId) {
+                title.textContent = "Edit Product SKU";
+                const item = window.inventory.find(i => i.id === editId);
+                if (item) {
+                    document.getElementById('prodSku').value = item.sku;
+                    document.getElementById('prodName').value = item.name;
+                    document.getElementById('prodCategory').value = item.category;
+                    document.getElementById('prodCost').value = item.costPrice;
+                    document.getElementById('prodWholesalePrice').value = item.wholesalePrice;
+                    document.getElementById('prodRetailPrice').value = item.retailPrice;
+                    document.getElementById('prodQtyWholesale').value = item.qtyWholesale;
+                    document.getElementById('prodQtyRetail').value = item.qtyRetail;
+                    document.getElementById('prodReorder').value = item.reorderLevel;
+                }
+            } else {
+                title.textContent = "Add New Product SKU";
+                document.getElementById('productForm').reset();
+            }
+
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        function handleProductSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editProductId').value;
+
+            const sku = document.getElementById('prodSku').value;
+            const name = document.getElementById('prodName').value;
+            const category = document.getElementById('prodCategory').value;
+            const costPrice = parseFloat(document.getElementById('prodCost').value);
+            const wholesalePrice = parseFloat(document.getElementById('prodWholesalePrice').value);
+            const retailPrice = parseFloat(document.getElementById('prodRetailPrice').value);
+            const qtyWholesale = parseInt(document.getElementById('prodQtyWholesale').value);
+            const qtyRetail = parseInt(document.getElementById('prodQtyRetail').value);
+            const reorderLevel = parseInt(document.getElementById('prodReorder').value);
+
+            if (editId) {
+                const index = window.inventory.findIndex(i => i.id === editId);
+                if (index !== -1) {
+                    window.inventory[index] = { id: editId, sku, name, category, costPrice, wholesalePrice, retailPrice, qtyWholesale, qtyRetail, reorderLevel };
+                }
+                addActivityLog("INVENTORY_UPDATE", "manager@stockhub.com", `Updated product details for ${sku}`);
+            } else {
+                const newItem = { id: 'P_' + Date.now(), sku, name, category, costPrice, wholesalePrice, retailPrice, qtyWholesale, qtyRetail, reorderLevel };
+                window.inventory.unshift(newItem);
+                addActivityLog("INVENTORY_ADD", "manager@stockhub.com", `Added new SKU line ${sku}`);
+            }
+
+            renderDashboard();
+            renderInventoryTable();
+            closeProductModal();
+            showToast("Product saved successfully.");
+        }
+
+        function editProduct(id) {
+            openProductModal(id);
+        }
+
+        function deleteProduct(id) {
+            const item = window.inventory.find(i => i.id === id);
+            window.inventory = window.inventory.filter(i => i.id !== id);
+            addActivityLog("INVENTORY_DELETE", "manager@stockhub.com", `Deleted SKU line ${item ? item.sku : id}`);
+            renderDashboard();
+            renderInventoryTable();
+            showToast("Product removed.");
+        }
+
+        // QUICK SALE
+        function openRecordSaleModal() {
+            const select = document.getElementById('saleItemSelect');
+            select.innerHTML = '<option value="">-- Select Product --</option>';
+
+            window.inventory.forEach(item => {
+                select.innerHTML += `<option value="${item.id}">${item.name} (${item.sku})</option>`;
+            });
+
+            document.getElementById('saleModal').classList.remove('hidden');
+        }
+
+        function closeRecordSaleModal() {
+            document.getElementById('saleModal').classList.add('hidden');
+        }
+
+        function updateSalePriceHint() {
+            const id = document.getElementById('saleItemSelect').value;
+            const channel = document.getElementById('saleChannel').value;
+            const item = window.inventory.find(p => p.id === id);
+
+            if (item) {
+                const price = channel === 'Wholesale' ? item.wholesalePrice : item.retailPrice;
+                document.getElementById('saleUnitPrice').value = price;
+                calcSaleTotal();
+            }
+        }
+
+        function calcSaleTotal() {
+            const qty = parseFloat(document.getElementById('saleQty').value) || 0;
+            const price = parseFloat(document.getElementById('saleUnitPrice').value) || 0;
+            document.getElementById('saleTotalVal').textContent = formatCurr(qty * price);
+        }
+
+        function handleSaleSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('saleItemSelect').value;
+            const channel = document.getElementById('saleChannel').value;
+            const qty = parseInt(document.getElementById('saleQty').value);
+            const price = parseFloat(document.getElementById('saleUnitPrice').value);
+
+            const item = window.inventory.find(p => p.id === id);
+            if (!item) return;
+
+            if (channel === 'Wholesale') {
+                if (qty > item.qtyWholesale) {
+                    showToast("Insufficient Wholesale stock!", true);
+                    return;
+                }
+                item.qtyWholesale -= qty;
+            } else {
+                if (qty > item.qtyRetail) {
+                    showToast("Insufficient Retail store stock!", true);
+                    return;
+                }
+                item.qtyRetail -= qty;
+            }
+
+            const total = qty * price;
+            window.salesHistory.unshift({
+                id: `S-${Date.now().toString().slice(-4)}`,
+                date: new Date().toISOString().substring(0, 10),
+                sku: item.sku,
+                name: item.name,
+                channel: channel,
+                qty: qty,
+                price: price,
+                cost: item.costPrice
+            });
+
+            addActivityLog("SALE", "manager@stockhub.com", `Recorded ${channel} sale: ${qty}x ${item.sku} (${formatCurr(total)})`);
+
+            renderDashboard();
+            renderInfographicsView();
+            closeRecordSaleModal();
+            showToast("Sale transaction completed!");
+        }
+
+        function exportReportSummary() {
+            let csvContent = "data:text/csv;charset=utf-8,SKU,Product Name,Category,Cost Price,Wholesale Price,Retail Price,Wholesale Stock,Retail Stock,Reorder Level\n";
+            window.inventory.forEach(i => {
+                csvContent += `"${i.sku}","${i.name}","${i.category}",${i.costPrice},${i.wholesalePrice},${i.retailPrice},${i.qtyWholesale},${i.qtyRetail},${i.reorderLevel}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `StockHub_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast("Report CSV downloaded.");
+        }
+    </script>
+</body>
+</html>
